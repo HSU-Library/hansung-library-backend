@@ -1,0 +1,22 @@
+# RAG / LangChain essentials
+python-dotenv
+pandas
+beautifulsoup4
+# torch -- HugggingFace사용 X
+openpyxl
+# LangChain split packages (>=0.2 series)
+langchain>=0.2
+langchain-community>=0.2
+langchain-core>=0.2
+langchain-openai>=0.2
+langchain-chroma>=0.1
+tiktoken>=0.7
+# Vector store + embeddings
+# faiss-cpu==1.8.0
+chromadb>=0.5
+# sentence-transformers>=3.0 -- HugggingFace사용 X
+# Avoid older typing_extensions issues
+typing_extensions>=4.12.2
+# Flask
+Flask>=3.0
+flask-cors>=4.0

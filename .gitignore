@@ -1,0 +1,25 @@
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Env / secrets
+.env
+
+# Vector DB / caches
+chroma_db/
+vectorstore_cache/
+
+# Others
+*.log
+
+# Data files
+*.xlsx
+*.csv

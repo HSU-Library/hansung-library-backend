@@ -13,7 +13,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 # 내부 서비스 import
-from backend.services.rag_service import ask as rag_ask  # RAG 호출 함수
+from services.rag_service import ask as rag_ask  # RAG 호출 함수
 from services.book_service import (
     load_books,
     save_books,

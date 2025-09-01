@@ -217,8 +217,8 @@
       "author": "parrott",
       "location": "2F-1-A-1-a",
       "position": 6,
-      "call_number": "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1348771462i/1380938.jpg",
-      "image_url": "",
+      "call_number": "",
+      "image_url": "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1348771462i/1380938.jpg",
       "available": false,
       "misplaced": false,
       "wrong-location": false

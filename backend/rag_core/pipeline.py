@@ -42,7 +42,7 @@ FROM_YEAR = int(os.getenv("RAG_FROM_YEAR", datetime.now().year - 4))
 
 # 임베딩 모델/배치
 EMBED_MODEL = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small")
-# EMBED_BATCH = int(os.getenv("OPENAI_EMBED_BATCH", "16"))  # ★ 한 번에 보내는 문서 수(작게!)
+EMBED_BATCH = int(os.getenv("OPENAI_EMBED_BATCH", "16"))  # 한 번에 보내는 문서 수(작게!)
 # 안전 토큰 상한(요청당 300k 제한보다 여유 있게)
 TOKEN_CAP_PER_REQUEST = int(os.getenv("OPENAI_EMBED_TOKEN_CAP", "240000"))
 

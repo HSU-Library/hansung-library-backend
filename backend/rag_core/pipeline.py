@@ -53,50 +53,53 @@ def _tok_len(s: str) -> int:
 
 # ------------------- 데이터 로딩 -------------------
 def _load_web_docs() -> List[Document]:
-    """한성대 도서관 웹 문서 로드"""
+    """한성대 도서관 웹 규정 문서를 h4+ul 단위로 로드"""
     url = "https://hsel.hansung.ac.kr/intro_data.mir"
-    loader = WebBaseLoader(
-        web_path=(url,),
-        bs_kwargs={"parse_only": bs4.SoupStrainer("div", attrs={"id": "intro_rule"})},
-    )
-    return loader.load()
+    resp = requests.get(url)
+    soup = BeautifulSoup(resp.text, "html.parser")
 
-def _load_bookloan_docs() -> List[Document]:
-    """10년치 도서 대출 데이터 로드 (최근 5년으로 제한)"""
-    xlsx = DATA_DIR / "BookLoan_10years_data.xlsx"
-    csv  = DATA_DIR / "BookLoan_10years_data.csv"
+    rule_div = soup.find("div", id="intro_rule")
+    if not rule_div:
+        return []
 
-    if xlsx.exists():
-        df = pd.read_excel(xlsx)
-        df.to_csv(csv, index=False, encoding="utf-8-sig")
-    else:
-        df = pd.read_csv(csv, encoding="utf-8")
-
-    # === [추가] 최근 5년 필터 ===
-    df["대출일자"] = pd.to_datetime(df["대출일자"], errors="coerce")
-    df = df[df["대출일자"].dt.year >= FROM_YEAR].copy()
-
-    # 대출월 컬럼
-    df["대출월"] = df["대출일자"].dt.to_period("M").astype(str)
-
-    # 월별 Document 생성 (필요 컬럼만 간결히)
     docs: List[Document] = []
-    for month, group in df.groupby("대출월"):
-        rows = group.apply(
-            lambda row: (
-                f"[대출일자]{row['대출일자'].date()} | "
-                f"[학번]{row['학번']} | "
-                f"[서명]{row['서명']} | "
-                f"[저자]{row['저자']} | "
-                f"[청구기호]{row['청구기호']} | "
-                f"[등록번호]{row['등록번호']} | "
-                f"[연장]{row['연장횟수']}"
-            ),
-            axis=1,
-        )
-        docs.append(Document(page_content="\n".join(rows), metadata={"month": month}))
+
+    # h4 (섹션 제목) + ul (내용 리스트) 추출
+    for h4 in rule_div.find_all("h4", class_="sub_title"):
+        section_title = h4.get_text(strip=True)
+        ul = h4.find_next_sibling("ul")
+        if ul:
+            items = [li.get_text(strip=True) for li in ul.find_all("li")]
+            section_text = section_title + " " + " ".join(items)
+
+            docs.append(Document(
+                page_content=section_text,
+                metadata={"source": "도서관_규정", "section": section_title}
+            ))
+
     return docs
 
+def _load_recommend_docs() -> List[Document]:
+    """추천 결과 CSV(recommend_all.csv)를 로드하여 Document 리스트 반환"""
+    csv = DATA_DIR / "recommend_all.csv"
+    df = pd.read_csv(csv, encoding="utf-8")
+
+    docs: List[Document] = []
+    for _, row in df.iterrows():
+        text = (
+            f"[서명]{row['서명']} | "
+            f"[대출횟수]{row['대출횟수']} | "
+            f"[대출학생수]{row['대출학생수']} | "
+            f"[학년]{row['학년']} | "
+            f"[학기]{row['학기']} | "
+            f"[분야]{row['분야']}"
+        )
+        docs.append(Document(page_content=text, metadata={
+            "학년": row["학년"],
+            "학기": row["학기"],
+            "분야": row["분야"]
+        }))
+    return docs
 # ------------------- 청크 분할(토큰 기준) -------------------
 def _split_docs(all_docs: List[Document]) -> List[Document]:
     """토큰 기준으로 안정 분할: 요청당 토큰 초과 방지에 핵심"""
@@ -177,20 +180,16 @@ def _get_or_create_vectorstore(splits: List[Document]) -> Chroma:
 # ------------------- 전역 초기화 -------------------
 print("\n🚀 인덱스 준비 중...")
 web_docs = _load_web_docs()
-csv_docs = _load_bookloan_docs()
-ALL_DOCS = web_docs + csv_docs
+recommend_docs = _load_recommend_docs()
+ALL_DOCS = web_docs + recommend_docs
 SPLITS = _split_docs(ALL_DOCS)
 print(f"📄 문서 {len(ALL_DOCS)}개 → 청크 {len(SPLITS)}개")
 
 VECTORSTORE = _get_or_create_vectorstore(SPLITS)
 
-# 월 필터 (현재 월만 검색)
-current_month = datetime.now().strftime("%Y-%m")
-def _filter_by_month(docs: List[Document]) -> List[Document]:
-    return [d for d in docs if d.metadata.get("month") == current_month]
-
+# Retriever 준비
 RETRIEVER = VECTORSTORE.as_retriever(search_type="mmr", search_kwargs={"k": 10})
-FILTERED_RETRIEVER = RETRIEVER | RunnableLambda(_filter_by_month)
+
 
 # 프롬프트 & LLM 준비
 try:
@@ -219,10 +218,7 @@ def ask(question: str, history: List[dict] | None = None) -> Dict[str, Any]:
     t0 = time.time()
 
     # (1) 관련 문서 리트리브
-    try:
-        retrieved_docs = FILTERED_RETRIEVER.invoke(question)
-    except Exception:
-        retrieved_docs = RETRIEVER.invoke(question)
+    retrieved_docs = RETRIEVER.invoke(question)
 
     # (2) 답변 생성
     answer = RAG_CHAIN.invoke(question)
@@ -231,9 +227,11 @@ def ask(question: str, history: List[dict] | None = None) -> Dict[str, Any]:
     sources = []
     for d in (retrieved_docs or [])[:5]:
         sources.append({
-            "month": d.metadata.get("month"),
-            "preview": d.page_content[:120] + "...",
-        })
+        "학년": d.metadata.get("학년"),
+        "학기": d.metadata.get("학기"),
+        "분야": d.metadata.get("분야"),
+        "preview": d.page_content[:120] + "..."
+    })
 
     elapsed = time.time() - t0
     return {"answer": answer, "sources": sources, "usage": {"latency_sec": round(elapsed, 2)}}

@@ -24,3 +24,5 @@ flask-cors>=4.0
 datasets>=2.19.1
 pyarrow>=14.0.2
 ragas>=0.3.3
+# HuggingFace Cross-Encoder reranker
+sentence-transformers

@@ -29,7 +29,6 @@ class MetadataAwareCrossEncoderReranker:
             'grade': None,
             'semester': None,
             'field': None,
-            'count': None
         }
         
         # 학년 추출
@@ -41,11 +40,6 @@ class MetadataAwareCrossEncoderReranker:
         semester_match = re.search(r'(\d+)학기', query)
         if semester_match:
             conditions['semester'] = int(semester_match.group(1))
-        
-        # 대출학생수 추출  
-        loan_count_match = re.search(r'(\d+)대출학생수', query)
-        if loan_count_match:
-            conditions['count'] = int(loan_count_match.group(1))
         
         # 분야 추출
         field_keywords = {
@@ -73,28 +67,21 @@ class MetadataAwareCrossEncoderReranker:
         score = 0
         reasons = []
         
-        # 학년 매칭 (높은 가중치)
+        # 학년 매칭 
         if conditions['grade'] and metadata.get('학년') == conditions['grade']:
-            score += 500  
+            score += 1000  
             reasons.append(f"학년 일치({conditions['grade']})")
         
-        # 학기 매칭 (높은 가중치)
+        # 학기 매칭 
         if conditions['semester'] and metadata.get('학기') == conditions['semester']:
-            score += 500  
+            score += 1000
             reasons.append(f"학기 일치({conditions['semester']})")
             
-        # 분야 매칭 (중간 가중치)
+        # 분야 매칭 
         if conditions['field'] and metadata.get('분야') == conditions['field']:
-            score += 500
+            score += 1500
             reasons.append(f"분야 일치({conditions['field']})")
 
-        # 대출학생수: 값이 클수록 가중치 부여
-        loan_students = metadata.get('대출학생수')
-        if loan_students:
-        # 가중치 스케일 조정 가능 (예: *50 → 10명 학생이면 500점 추가)
-            score += int(loan_students) * 50  
-            reasons.append(f"대출학생수 가중치(+{loan_students*50})")
-        
         return score, reasons
 
     def rerank_documents(self, documents: List[Document], query: str) -> List[Document]:
@@ -168,7 +155,7 @@ class MetadataAwareRetriever:
     def __init__(self, vectorstore, reranker: MetadataAwareCrossEncoderReranker, initial_k: int = 15):
         """초기 검색을 더 많이 해서 누락 방지"""
         self.base_retriever = vectorstore.as_retriever(
-            search_type="mmr",
+            search_type="similarity",
             search_kwargs={"k": initial_k}
         )
         self.reranker = reranker
@@ -188,3 +175,4 @@ class MetadataAwareRetriever:
     def get_relevant_documents(self, query: str) -> List[Document]:
         """Legacy 호환성"""
         return self.invoke(query)
+    

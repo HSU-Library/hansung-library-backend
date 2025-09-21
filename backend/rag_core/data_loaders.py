@@ -110,8 +110,7 @@ def _load_recommend_docs() -> List[Document]:
         docs.append(Document(page_content=text, metadata={
             "학년": row["학년"],
             "학기": row["학기"],
-            "분야": row["분야"],
-            "대출학생수": row["대출학생수"]
+            "분야": row["분야"]
         }))
     return docs
 

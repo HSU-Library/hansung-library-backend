@@ -75,7 +75,6 @@ def _get_or_create_vectorstore(splits: List[Document]) -> Chroma:
         )
         _build_index_in_safe_batches(
             vs, splits, embedding)
-        vs.persist()
         print("✅ 인덱스 생성 & 저장 완료")
     else:
         print("📁 기존 Chroma 인덱스 로드 (API 호출 없음)")

@@ -35,7 +35,7 @@ metadata_aware_reranker = MetadataAwareCrossEncoderReranker(
 Book_RETRIEVER = MetadataAwareRetriever(
     vectorstore=VECTORSTORE,
     reranker=metadata_aware_reranker,
-    initial_k=15
+    initial_k=50
 )
 
 Library_RETRIEVER = VECTORSTORE.as_retriever(
@@ -97,15 +97,29 @@ def ask(question: str, history: List[dict] | None = None) -> Dict[str, Any]:
     elapsed = time.time() - t0
     return {"answer": answer, "sources": sources, "usage": {"latency_sec": round(elapsed, 2)}}
 
+
+# 검색된 문서의 메타데이터와 소스 확인
+def debug_retrieved_docs(query):
+    initial_docs = Book_RETRIEVER.base_retriever.invoke(query)
+    
+    print(f"=== 초기 검색 결과 ({len(initial_docs)}개) ===")
+    for i, doc in enumerate(initial_docs):
+        print(f"{i+1}. {doc.page_content[:50]}...")
+        print(f"   메타데이터: {doc.metadata}")
+        print(f"   소스: {doc.metadata.get('source', 'Unknown')}")
+        print()
+
 # 테스트 실행 
 if __name__ == "__main__":
-    question = "4학년 1학기 기술과학 분야에서 추천할 도서는?"
+    question = "4학년 1학기 총류 분야 추천 도서"
     print(f"📝 질문: {question}")
     
+     # 디버깅 실행
+    debug_retrieved_docs(question)
+    
+    # 실제 ask 함수도 실행
     try:
         result = ask(question)
         print(f"🤖 답변:\n{result['answer']}")
-        print(f"⏱️ 응답시간: {result['usage']['latency_sec']}초")
-        print(f"📚 검색된 문서 수: {len(result['sources'])}")
     except Exception as e:
         print(f"❌ 오류: {e}")

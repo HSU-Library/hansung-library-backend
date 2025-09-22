@@ -50,8 +50,8 @@ def _load_lending_guide() -> List[Document]:
             "lend02": "반납_연체",
             "lend03": "연장_예약_분실", 
             "lend04": "이용시_주의사항",
-            "lend05": "기타안내1",
-            "lend06": "성북미아캠퍼스",
+            "lend05": "졸업생",
+            "lend06": "일반/특별회원",
             "lend08": "장애학생지원"
         }
         

@@ -27,14 +27,22 @@ Flask + RAG(Retrieval-Augmented Generation) + 라즈베리파이 바코드 리�
 ```bash
 HSU_Library_Backend/
 ├── backend/
-│   ├── app.py                # Flask 서버 진입점
+│   ├── app.py                  # Flask 서버 진입점
 │   ├── services/
-│   │   ├── book_service.py   # 도서 관리 로직
-│   │   └── rag_service.py    # RAG 기반 챗봇 서비스
-│   ├── rag_core/             # RAG 파이프라인 로직
-│   ├── chroma_db/            # Chroma 인덱스 (생성됨)
-│   └── requirements.txt      # 의존성 패키지
-└── notebooks/                # 데이터 전처리 및 RAG 실험용 주피터 노트북
+│   │   ├── book_service.py     # 도서 관리 로직
+│   │   └── rag_service.py      # RAG 기반 챗봇 서비스
+│   ├── rag_core/               # RAG 파이프라인 관련 핵심 모듈
+│   │   ├── __init__.py
+│   │   ├── config.py           # 환경설정 및 공통 상수 정의
+│   │   ├── data_loaders.py     # 데이터 로딩 및 전처리 모듈
+│   │   ├── pipeline.py         # RAG 파이프라인 실행 로직
+│   │   ├── prompts.py          # 프롬프트 템플릿 관리
+│   │   ├── retrievers.py       # 벡터 검색기/리트리버 정의
+│   │   ├── text_processing.py  # 텍스트 전처리 유틸
+│   │   └── utils.py            # 공통 유틸리티 함수 모음
+│   ├── chroma_db/              # Chroma 인덱스 저장소 (RAG 검색용 벡터 DB)
+│   └── requirements.txt        # 의존성 패키지 목록
+└── notebooks/                  # 데이터 전처리 및 RAG 실험용 주피터 노트북
 ```
 ---
 
@@ -46,7 +54,8 @@ HSU_Library_Backend/
 cd backend
 python -m venv venv
 source venv/bin/activate   # macOS/Linux
-venv\Scripts\activate      # Windows
+venv\Scripts\activate      # Windows (CMD)
+.\venv\Scripts\Activate.ps1 # Windows (PowerShell)
 ```
 
 2. 패키지 설치
@@ -58,6 +67,8 @@ pip install -r requirements.txt
 ```bash
 OPENAI_API_KEY=your_openai_api_key
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+FLASK_ENV=development
+PORT=8080
 ```
 
 4. 서버 실행

@@ -42,6 +42,7 @@ log = logging.getLogger("rag-api")
 # ====== 전역 데이터 ======
 BOOKS_FILE = os.path.join("data", "books.json")
 EXPECTED_BARCODES_FILE = os.path.join("data", "expected_barcodes.json")
+robot_status = "normal"
 
 ##############################################################################    수정사항1  ###
 ###############################################################################################
@@ -183,7 +184,7 @@ def move_sequence_bg():
 ##############################################################################    수정사항3  ###
 ###############################################################################################
 # 1. C 코드 컴파일 및 실행 (터미널에서)
-@app.route('/scan', methods=['POST'])
+@app.route('/api/scan', methods=['POST'])
 def scan_book():
     global robot_status
     robot_status = "scanning"
@@ -204,7 +205,7 @@ def scan_book():
 
 
 # 2. scanner 종료 (kill)
-@app.route('/scan_exit', methods=['POST'])
+@app.route('/api/scan_exit', methods=['POST'])
 def stop_scanner():
     global robot_status
     robot_status = "complete"
@@ -265,7 +266,6 @@ def handle_motor_movement_for_shelf(location):
 
 ##############################################################################    수정사항4  ###
  ###############################################################################################
-    handle_motor_movement_for_shelf(location)
 ##############################################################################    수정사항4  끝 #
 ###############################################################################################
 
@@ -306,6 +306,23 @@ def chat():
         return jsonify({"error": str(e), "requestId": rid}), 500
 
 # ====== Book Management API ======
+@app.route('/api/robot_status', methods=['GET'])
+def get_robot_status():
+    return jsonify({"status": robot_status})
+
+
+@app.route('/api/set_robot_status', methods=['POST'])
+def set_robot_status():
+    global robot_status
+    data = request.get_json()
+    status = data.get("status")
+
+    if status in ["normal", "scanning", "complete"]:
+        robot_status = status
+        return jsonify({"success": True, "status": robot_status})
+    else:
+        return jsonify({"success": False, "error": "Invalid status"}), 400
+    
 @app.get("/api/books")
 def get_books():
     """책 목록 조회"""
@@ -334,6 +351,10 @@ def update_book_status():
     try:
         books, result = update_book_status_logic(books, expected_barcodes, scanned)
         save_books(books, BOOKS_FILE)  # 저장
+
+        location = list(scanned.keys())[0]
+        handle_motor_movement_for_shelf(location)
+        
         return jsonify(result), 200
     except Exception as e:
         log.exception("update_book_status error")

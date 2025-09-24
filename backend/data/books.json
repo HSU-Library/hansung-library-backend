@@ -329,6 +329,19 @@
       "available": false,
       "misplaced": false,
       "wrong-location": false
+    },
+    {
+      "barcode": "0266893",
+      "title": "산삼재집 4",
+      "author": "이상아",
+      "location": "1F-a-4",
+      "position": 7,
+      "call_number": "",
+      "image_url": "https://img.libbook.co.kr/V2/BookImgK19/9791155503614.gif",
+      "available": false,
+      "misplaced": false,
+      "wrong-location": false,
+      "status": "not-available"
     }
   ]
   
